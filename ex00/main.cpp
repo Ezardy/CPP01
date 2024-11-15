@@ -46,21 +46,25 @@ TEST_LOGIC_START(new_zombie_test)
 		newZombie(names[0]), newZombie(names[1]), newZombie(names[2]),
 		newZombie(names[3]), newZombie(names[4])
 	};
-	std::streambuf		*old = std::cout.rdbuf();
-	std::ostringstream	oss;
-	std::string			message;
+	success = zombies[0] && zombies[1] && zombies[2] && zombies[3] && zombies[4];
+	if (success) {
+		std::streambuf		*old = std::cout.rdbuf();
+		std::ostringstream	oss;
+		std::string			message;
 
-	for (int i = 4; success && i >= 0; i -= 1) {
-		std::cout.rdbuf(oss.rdbuf());
-		zombies[i]->announce();
-		delete zombies[i];
-		std::cout.rdbuf(old);
-		message = oss.str();
-		oss.str("");
-		std::cout << message;
-		success = names[i] + ": BraiiiiiiinnnzzzZ...\n"
-			+ names[i] + " destructed\n" == message;
-	}
+		for (int i = 4; success && i >= 0; i -= 1) {
+			std::cout.rdbuf(oss.rdbuf());
+			zombies[i]->announce();
+			delete zombies[i];
+			std::cout.rdbuf(old);
+			message = oss.str();
+			oss.str("");
+			std::cout << message;
+			success = names[i] + ": BraiiiiiiinnnzzzZ...\n"
+				+ names[i] + " destructed\n" == message;
+		}
+	} else
+		std::cerr << "newZombie function failed to allocate memory\n";
 TEST_LOGIC_END
 
 TEST_LOGIC_START(random_chump_test)
@@ -85,47 +89,54 @@ TEST_LOGIC_START(standard_heap_zombie_destruction_test)
 	Zombie				*zombies[5] = {
 		new Zombie, new Zombie, new Zombie, new Zombie, new Zombie
 	};
-	std::streambuf		*old = std::cout.rdbuf();
-	std::ostringstream	oss;
-	std::string			message;
-	std::string			name;
-	size_t				pos_of_space;
-
-	for (int i = 4; success && i >= 0; i -= 1) {
-		std::cout.rdbuf(oss.rdbuf());
-		delete zombies[i];
-		std::cout.rdbuf(old);
-		message = oss.str();
-		oss.str("");
-		name = message;
-		pos_of_space = name.find_last_of(' ');
-		name.erase(pos_of_space, name.length() - pos_of_space);
-		std::cout << message;
-		success = name + " destructed\n" == message;
-	}
+	success = zombies[0] && zombies[1] && zombies[2] && zombies[3] && zombies[4];
+	if (success) {
+		std::streambuf		*old = std::cout.rdbuf();
+		std::ostringstream	oss;
+		std::string			message;
+		std::string			name;
+		size_t				pos_of_space;
+		for (int i = 4; success && i >= 0; i -= 1) {
+			std::cout.rdbuf(oss.rdbuf());
+			delete zombies[i];
+			std::cout.rdbuf(old);
+			message = oss.str();
+			oss.str("");
+			name = message;
+			pos_of_space = name.find_last_of(' ');
+			name.erase(pos_of_space, name.length() - pos_of_space);
+			std::cout << message;
+			success = name + " destructed\n" == message;
+		}
+	} else
+		std::cerr << "Allocation of one or more Zombie instances failed\n";
 TEST_LOGIC_END
 
 TEST_LOGIC_START(standard_heap_zombie_announce_test)
 	Zombie				*zombies = new Zombie[5];
-	std::streambuf		*old = std::cout.rdbuf();
-	std::string			announcement;
-	std::string			name;
-	size_t				pos_of_colon;
-	std::ostringstream	oss;
+	success = zombies != NULL;
+	if (success) {
+		std::streambuf		*old = std::cout.rdbuf();
+		std::string			announcement;
+		std::string			name;
+		size_t				pos_of_colon;
+		std::ostringstream	oss;
 
-	for (int i = 0; success && i < 5; i += 1) {
-		std::cout.rdbuf(oss.rdbuf());
-		zombies[i].announce();
-		std::cout.rdbuf(old);
-		announcement = oss.str();
-		oss.str("");
-		name = announcement;
-		pos_of_colon = name.find(':');
-		name.erase(pos_of_colon, name.length() - pos_of_colon);
-		std::cout << announcement;
-		success = name + ": BraiiiiiiinnnzzzZ...\n" == announcement;
-	}
-	delete [] zombies;
+		for (int i = 0; success && i < 5; i += 1) {
+			std::cout.rdbuf(oss.rdbuf());
+			zombies[i].announce();
+			std::cout.rdbuf(old);
+			announcement = oss.str();
+			oss.str("");
+			name = announcement;
+			pos_of_colon = name.find(':');
+			name.erase(pos_of_colon, name.length() - pos_of_colon);
+			std::cout << announcement;
+			success = name + ": BraiiiiiiinnnzzzZ...\n" == announcement;
+		}
+		delete [] zombies;
+	} else
+		std::cerr << "Allocation of Zombie instances array failed\n";
 TEST_LOGIC_END
 
 TEST_LOGIC_START(standard_stack_zombie_destructor_test)
