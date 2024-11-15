@@ -10,8 +10,8 @@ public:
 	~Zombie(void);
 	Zombie(const Zombie &other);
 	Zombie						&operator=(const Zombie &other);
-	void						announce(void) const;
 	static const std::string	&GetRandomName(void);
+	void						announce(void) const;
 private:
 	static const std::string	_names[100];
 	std::string					name;
