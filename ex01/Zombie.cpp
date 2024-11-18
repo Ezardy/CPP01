@@ -7,7 +7,7 @@ Zombie::Zombie(void) : name(GetRandomName()) {
 
 }
 
-Zombie::Zombie(const std::string &name) : name(name) {
+Zombie::Zombie(std::string name) : name(name) {
 
 }
 
