@@ -14,7 +14,6 @@ public:
 	~HumanA(void);
 
 	void	attack(void) const;
-	void	setWeapon(Weapon &weapon);
 	void	DropWeapon(void);
 private:
 	static Weapon	_defaultWeapon;

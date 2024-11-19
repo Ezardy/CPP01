@@ -28,20 +28,19 @@
 static bool	hmnA_change_weapon_type(void);
 static bool	hmnB_change_weapon_type(void);
 static bool	hmnA_dies_hmnB_take_his_weapon(void);
-static bool	hmnB_dies_hmnA_take_his_weapon(void);
-static bool	hmnB_and_hmnA_swap_theirs_weapons(void);
+static bool	hmnB_and_hmnB_swap_theirs_weapons(void);
 static bool	hmnA_weapon_brakes(void);
 static bool	hmnB_weapon_brakes(void);
-static bool	hmnA_tries_take_invalid_and_owned_weapons(void);
+static bool	invalids(void);
 static bool	hmnB_tries_take_invalid_and_owned_weapons(void);
 
 int	main() {
 	bool	success = true;
 	bool	(*tests[])(void) = {
 		hmnA_change_weapon_type, hmnB_change_weapon_type,
-		hmnA_dies_hmnB_take_his_weapon, hmnB_dies_hmnA_take_his_weapon,
-		hmnB_and_hmnA_swap_theirs_weapons, hmnA_weapon_brakes,
-		hmnB_weapon_brakes, hmnA_tries_take_invalid_and_owned_weapons,
+		hmnA_dies_hmnB_take_his_weapon,
+		hmnB_and_hmnB_swap_theirs_weapons, hmnA_weapon_brakes,
+		hmnB_weapon_brakes, invalids,
 		hmnB_tries_take_invalid_and_owned_weapons
 	};
 	size_t	tests_count = sizeof(tests) / sizeof(tests[0]);
@@ -74,22 +73,30 @@ TEST_LOGIC_START(hmnB_tries_take_invalid_and_owned_weapons)
 	expected = std::string(paulName) + " attacks with their " + gunName + '\n';
 TEST_LOGIC_END
 
-TEST_LOGIC_START(hmnA_tries_take_invalid_and_owned_weapons)
+TEST_LOGIC_START(invalids)
 	const char	*gunName = "gun";
 	const char	*jakeName = "Jake";
 	const char	*paulName = "Paul";
 	Weapon		gun(gunName);
 	Weapon		invWpn;
-	HumanA		jake(jakeName, gun);
-	HumanA		paul(paulName, gun);
+	HumanA		jake(jakeName, invWpn);
+	HumanB		paul(paulName);
+	HumanA		inv2("", gun);
+	HumanB		inv3("");
 
+	inv2.attack();
+	inv2.~HumanA();
+	jake.attack();
 	paul.attack();
+	HumanA	inv;
+	inv.attack();
+	HumanB	inv1;
+	inv1.attack();
+	jake.~HumanA();
 	paul.setWeapon(invWpn);
 	paul.attack();
-	jake.~HumanA();
-	paul.setWeapon(gun);
-	paul.attack();
-	expected = std::string(paulName) + " attacks with their " + gunName + '\n';
+	inv3.setWeapon(gun);
+	inv3.attack();
 TEST_LOGIC_END
 
 TEST_LOGIC_START(hmnB_weapon_brakes)
@@ -115,25 +122,17 @@ TEST_LOGIC_END
 
 TEST_LOGIC_START(hmnA_weapon_brakes)
 	const char	*gunName = "gun";
-	const char	*rifleName = "rifle";
 	const char	*jakeName = "Jake";
 	Weapon		gun(gunName);
-	Weapon		rifle(rifleName);
 	HumanA		jake(jakeName, gun);
 
 	jake.attack();
-	jake.setWeapon(rifle);
+	gun.~Weapon();
 	jake.attack();
-	rifle.~Weapon();
-	jake.attack();
-	jake.setWeapon(gun);
-	jake.attack();
-	expected = std::string(jakeName) + " attacks with their " + gunName + '\n'
-		+ jakeName + " attacks with their " + rifleName + '\n'
-		+ jakeName + " attacks with their " + gunName + '\n';
+	expected = std::string(jakeName) + " attacks with their " + gunName + '\n';
 TEST_LOGIC_END
 
-TEST_LOGIC_START(hmnB_and_hmnA_swap_theirs_weapons)
+TEST_LOGIC_START(hmnB_and_hmnB_swap_theirs_weapons)
 	const char	*gunName = "gun";
 	const char	*rifleName = "rifle";
 	const char	*knifeName = "knife";
@@ -142,9 +141,10 @@ TEST_LOGIC_START(hmnB_and_hmnA_swap_theirs_weapons)
 	Weapon		gun(gunName);
 	Weapon		rifle(rifleName);
 	Weapon		knife(knifeName);
-	HumanA		jake(jakeName, gun);
+	HumanB		jake(jakeName);
 	HumanB		donald(donaldName);
 
+	jake.setWeapon(gun);
 	donald.setWeapon(gun);
 	jake.attack();
 	donald.attack();
@@ -167,29 +167,6 @@ TEST_LOGIC_START(hmnB_and_hmnA_swap_theirs_weapons)
 		+ donaldName + " attacks with their " + rifleName + '\n'
 		+ jakeName + " attacks with their " + rifleName + '\n'
 		+ donaldName + " attacks with their " + gunName + '\n';
-TEST_LOGIC_END
-
-TEST_LOGIC_START(hmnB_dies_hmnA_take_his_weapon)
-	const char	*nameA = "Jake";
-	const char	*nameB = "Rachel";
-	const char	*gunName = "gun";
-	const char	*rifleName = "rifle";
-	Weapon		gun(gunName);
-	Weapon		rifle(rifleName);
-	HumanA		ha(nameA, gun);
-	HumanB		hb(nameB);
-
-	hb.setWeapon(rifle);
-	ha.setWeapon(rifle);
-	ha.attack();
-	hb.attack();
-	hb.~HumanB();
-	ha.setWeapon(rifle);
-	ha.attack();
-	success = !gun.Owned() && rifle.Owned();
-	expected = std::string(nameA) + " attacks with their " + gunName + '\n'
-		+ nameB + " attacks with their " + rifleName + '\n' + nameA
-		+ " attacks with their " + rifleName + '\n';
 TEST_LOGIC_END
 
 TEST_LOGIC_START(hmnA_dies_hmnB_take_his_weapon)

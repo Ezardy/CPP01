@@ -3,17 +3,20 @@
 #include "HumanA.hpp"
 #include "Weapon.hpp"
 
-HumanA::HumanA(void) : weapon(_defaultWeapon) {
+HumanA::HumanA(void) : weapon(_defaultWeapon), _weaponBroken(true) {
 
 }
 
-HumanA::HumanA(const HumanA &other) : weapon(_defaultWeapon) {
+HumanA::HumanA(const HumanA &other) : weapon(_defaultWeapon), _weaponBroken(true) {
 	_Copy(other);
 }
 
 HumanA::HumanA(std::string name, Weapon &weapon)
-	: name(name), weapon(_defaultWeapon) {
-	setWeapon(weapon);
+	: name(name), weapon(weapon), _weaponBroken(false) {
+	if (weapon.Owned())
+		_weaponBroken = true;
+	else
+		_key = weapon.SetOwner(this);
 }
 
 HumanA	&HumanA::operator=(const HumanA &other) {
@@ -29,15 +32,6 @@ HumanA::~HumanA(void) {
 void	HumanA::attack(void) const {
 	if (!(name.empty() || _weaponBroken || weapon.getType().empty()))
 		std::cout << name << " attacks with their " << weapon.getType() << '\n';
-}
-
-void	HumanA::setWeapon(Weapon &weapon) {
-	if (!(weapon.Owned() || weapon.getType().empty())) {
-		DropWeapon();
-		_weaponBroken = false;
-		this->weapon = weapon;
-		_key = weapon.SetOwner(this);
-	}
 }
 
 void	HumanA::DropWeapon(void) {
