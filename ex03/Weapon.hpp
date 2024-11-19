@@ -3,6 +3,7 @@
 
 # include <string>
 
+class HumanA;
 class HumanB;
 
 class Weapon {
@@ -15,12 +16,18 @@ public:
 
 	const std::string	&getType(void) const;
 	void				setType(std::string type);
-	void				SetOwner(HumanB *owner);
+	std::string	SetOwner(HumanB *owner);
+	std::string	SetOwner(HumanA *owner);
+	void				ClearOwner(const std::string &key);
 	bool				Owned(void) const;
 private:
 	std::string	type;
-	HumanB		*_owner;
+	void		*_owner;
+	bool		_ab;
+	std::string	_key;
 
 	void	_Copy(const Weapon &other);
+	void	_GenerateSecureKey(void);
+	std::string _SetOwner(void *owner, bool type);
 };
 #endif

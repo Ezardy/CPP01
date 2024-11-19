@@ -31,21 +31,20 @@ void	HumanB::attack(void) const {
 
 void	HumanB::setWeapon(Weapon &weapon) {
 	if (!(name.empty() || weapon.Owned() || weapon.getType().empty())) {
+		DropWeapon();
 		this->weapon = &weapon;
-		weapon.SetOwner(this);
+		_key = weapon.SetOwner(this);
 	}
 }
 
 void	HumanB::DropWeapon(void) {
 	if (weapon != NULL) {
-		weapon->SetOwner(NULL);
+		weapon->ClearOwner(_key);
 		weapon = NULL;
 	}
 }
 
 void HumanB::_Copy(const HumanB &other) {
-	if (this != &other) {
+	if (this != &other)
 		name = other.name;
-		weapon = other.weapon;
-	}
 }

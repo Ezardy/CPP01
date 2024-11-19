@@ -9,14 +9,20 @@ class HumanA {
 public:
 	HumanA(void);
 	HumanA(const HumanA &other);
-	HumanA(std::string name, const Weapon &weapon);
+	HumanA(std::string name, Weapon &weapon);
 	HumanA	&operator=(const HumanA &other);
 	~HumanA(void);
 
 	void	attack(void) const;
+	void	setWeapon(Weapon &weapon);
+	void	DropWeapon(void);
 private:
-	std::string	name;
-	Weapon		weapon;
+	static Weapon	_defaultWeapon;
+
+	std::string		name;
+	Weapon			&weapon;
+	bool			_weaponBroken;
+	std::string		_key;
 
 	void	_Copy(const HumanA &other);
 };

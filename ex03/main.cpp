@@ -1,49 +1,48 @@
 #include <iostream>
 #include <sstream>
+#include <string>
 
 #include "HumanA.hpp"
 #include "HumanB.hpp"
+#include "Weapon.hpp"
 
 #define TEST_LOGIC_START(func_name) static bool func_name() {\
-		bool success = true;\
-		std::string _func_name = #func_name;\
-		std::cout << "[START " << _func_name << "]\n";\
+		bool				success = true;\
+		const std::string	_func_name = #func_name;\
 		std::streambuf		*old = std::cout.rdbuf();\
-		std::ostringstream	oss;
-		std::string			expected;
+		std::ostringstream	oss;\
+		std::string			expected;\
+		std::cout << "[START " << _func_name << "]\n";\
+		std::cout.rdbuf(oss.rdbuf());
 #define TEST_LOGIC_END\
-		success = success && expected == oss.str();\
 		std::cout.rdbuf(old);\
+		success = success && expected == oss.str();\
 		std::cout << oss.str();\
-		if (!success)\
+		if (!success) {\
+			std::cout << "EXPECTED:\n" << expected;\
 			std::cout << _func_name << " failed\n";\
+		}\
 		return success;\
 	}
 
-static bool	hmnA_single_weapon(void);
-static bool	hmnA_multiple_weapon(void);
-static bool	hmnB_single_weapon(void);
-static bool	hmnB_multiple_weapon(void);
-static bool	hmnB_dead_other_pick_weapon(void);
-static bool	hmnB_drop_weapon_other_pick_weapon(void);
-static bool	hmnB_weapon_brake(void);
-static bool	hmnA_invalid_weapon(void);
-static bool	hmnB_invalid_weapon(void);
-static bool	hmnA_invalid_name(void);
-static bool	hmnB_invalid_name(void);
-static bool	hmnA_invalid_weapon_and_name(void);
-static bool	hmnB_invalid_weapon_and_name(void);
-static bool	standard_test(void);
+static bool	hmnA_change_weapon_type(void);
+static bool	hmnB_change_weapon_type(void);
+static bool	hmnA_dies_hmnB_take_his_weapon(void);
+static bool	hmnB_dies_hmnA_take_his_weapon(void);
+static bool	hmnB_and_hmnA_swap_theirs_weapons(void);
+static bool	hmnA_weapon_brakes(void);
+static bool	hmnB_weapon_brakes(void);
+static bool	hmnA_tries_take_invalid_and_owned_weapons(void);
+static bool	hmnB_tries_take_invalid_and_owned_weapons(void);
 
 int	main() {
 	bool	success = true;
 	bool	(*tests[])(void) = {
-		hmnA_single_weapon, hmnA_multiple_weapon, hmnB_single_weapon,
-		hmnB_multiple_weapon, hmnB_dead_other_pick_weapon,
-		hmnB_drop_weapon_other_pick_weapon, hmnB_weapon_brake,
-		hmnA_invalid_weapon, hmnB_invalid_weapon, hmnA_invalid_name,
-		hmnB_invalid_name, hmnA_invalid_weapon_and_name,
-		hmnB_invalid_weapon_and_name, standard_test
+		hmnA_change_weapon_type, hmnB_change_weapon_type,
+		hmnA_dies_hmnB_take_his_weapon, hmnB_dies_hmnA_take_his_weapon,
+		hmnB_and_hmnA_swap_theirs_weapons, hmnA_weapon_brakes,
+		hmnB_weapon_brakes, hmnA_tries_take_invalid_and_owned_weapons,
+		hmnB_tries_take_invalid_and_owned_weapons
 	};
 	size_t	tests_count = sizeof(tests) / sizeof(tests[0]);
 	for (size_t i = 0; success && i < tests_count; i += 1) {
@@ -55,220 +54,187 @@ int	main() {
 	return success;
 }
 
-TEST_LOGIC_START(standard_test)
-	{
-		Weapon club = Weapon("crude spiked club");
-		HumanA bob("Bob", club);
-		bob.attack();
-		club.setType("some other type of club");
-		bob.attack();
-	}
-	{
-		Weapon club = Weapon("crude spiked club");
-		HumanB jim("Jim");
-		jim.setWeapon(club);
-		jim.attack();
-		club.setType("some other type of club");
-		jim.attack();
-	}
-	expected = "Bob attacks with their crude spiked club\nJim attacks with thei\
-		r some other type of club\n";
+TEST_LOGIC_START(hmnB_tries_take_invalid_and_owned_weapons)
+	const char	*gunName = "gun";
+	const char	*jakeName = "Jake";
+	const char	*paulName = "Paul";
+	Weapon		gun(gunName);
+	Weapon		invWpn;
+	HumanA		jake(jakeName, gun);
+	HumanB		paul(paulName);
+
+	paul.attack();
+	paul.setWeapon(gun);
+	paul.attack();
+	paul.setWeapon(invWpn);
+	paul.attack();
+	jake.~HumanA();
+	paul.setWeapon(gun);
+	paul.attack();
+	expected = std::string(paulName) + " attacks with their " + gunName + '\n';
 TEST_LOGIC_END
 
-TEST_LOGIC_START(hmnB_invalid_weapon_and_name)
-	Weapon	weapon;
-	HumanB	human;
+TEST_LOGIC_START(hmnA_tries_take_invalid_and_owned_weapons)
+	const char	*gunName = "gun";
+	const char	*jakeName = "Jake";
+	const char	*paulName = "Paul";
+	Weapon		gun(gunName);
+	Weapon		invWpn;
+	HumanA		jake(jakeName, gun);
+	HumanA		paul(paulName, gun);
 
-	human.setWeapon(weapon);
-	human.attack();
-	success = !weapon.Owned();
-
+	paul.attack();
+	paul.setWeapon(invWpn);
+	paul.attack();
+	jake.~HumanA();
+	paul.setWeapon(gun);
+	paul.attack();
+	expected = std::string(paulName) + " attacks with their " + gunName + '\n';
 TEST_LOGIC_END
 
-TEST_LOGIC_START(hmnA_invalid_weapon_and_name)
-	Weapon	weapon;
-	HumanA	human("", weapon);
+TEST_LOGIC_START(hmnB_weapon_brakes)
+	const char	*gunName = "gun";
+	const char	*rifleName = "rifle";
+	const char	*jakeName = "Jake";
+	Weapon		gun(gunName);
+	Weapon		rifle(rifleName);
+	HumanB		jake(jakeName);
 
-	human.attack();
-	success = !weapon.Owned();
-
-TEST_LOGIC_END
-
-TEST_LOGIC_START(hmnB_invalid_name)
-	Weapon	weapon("gun");
-	HumanB	human;
-
-	human.setWeapon(weapon);
-	human.attack();
-	success = !weapon.Owned();
-
-TEST_LOGIC_END
-
-TEST_LOGIC_START(hmnA_invalid_name)
-	Weapon	weapon("gun");
-	HumanA	human("", weapon);
-
-	human.attack();
-	success = !weapon.Owned();
-
-TEST_LOGIC_END
-
-TEST_LOGIC_START(hmnB_invalid_weapon)
-	Weapon	weapon;
-	HumanB	human("Jake");
-
-	human.setWeapon(weapon);
-	human.attack();
-	success = !weapon.Owned();
-
-TEST_LOGIC_END
-
-TEST_LOGIC_START(hmnA_invalid_weapon)
-	Weapon	weapon;
-	HumanA	human("Jake", weapon);
-	human.attack();
-	success = !weapon.Owned();
-TEST_LOGIC_END
-
-TEST_LOGIC_START(hmnB_weapon_brake)
-	const std::string	n = "Jake";
-	const std::string	wn = "gun";
-	Weapon				weapon(wn);
-	HumanB				human(n);
-
-	human.setWeapon(weapon);
-	human.attack();
-	expected = n + " attacks with their " + wn + '\n';
-	weapon.~Weapon();
-	human.attack();
-TEST_LOGIC_END
-
-TEST_LOGIC_START(hmnB_drop_weapon_other_pick_weapon)
-	const std::string	n1 = "Jake";
-	const std::string	n2 = "Roger";
-	const std::string	wn = "gun";
-	HumanB	jake(n1);
-	HumanB	roger(n2);
-	Weapon	weapon(wn);
-
-	jake.setWeapon(weapon);
-	roger.setWeapon(weapon);
+	jake.setWeapon(gun);
 	jake.attack();
-	roger.attack();
-	expected = n1 + " attacks with their " + wn + '\n';
-	jake.DropWeapon();
-	roger.setWeapon(weapon);
+	jake.setWeapon(rifle);
 	jake.attack();
-	roger.attack();
-	expected += n2 + " attacks with their " + wn + '\n';
-TEST_LOGIC_END
-
-TEST_LOGIC_START(hmnB_dead_other_pick_weapon)
-	const std::string	n1 = "Jake";
-	const std::string	n2 = "Roger";
-	const std::string	wn = "gun";
-	HumanB	jake(n1);
-	HumanB	roger(n2);
-	Weapon	weapon(wn);
-
-	jake.setWeapon(weapon);
-	roger.setWeapon(weapon);
+	rifle.~Weapon();
 	jake.attack();
-	roger.attack();
-	expected = n1 + " attacks with their " + wn + '\n';
-	jake.~HumanB();
-	roger.setWeapon(weapon);
-	roger.attack();
-	expected += n2 + " attacks with their " + wn + '\n';
+	jake.setWeapon(gun);
+	jake.attack();
+	expected = std::string(jakeName) + " attacks with their " + gunName + '\n'
+		+ jakeName + " attacks with their " + rifleName + '\n'
+		+ jakeName + " attacks with their " + gunName + '\n';
 TEST_LOGIC_END
 
-TEST_LOGIC_START(hmnB_multiple_weapon)
-	const std::string	weaponTypes[5] = {
-		"gun", "rifle", "carabine", "shotgun", "knife"
-	};
-	Weapon		weapons[5] = {
-		Weapon(weaponTypes[0]), Weapon(weaponTypes[1]), Weapon(weaponTypes[2]),
-		Weapon(weaponTypes[3]), Weapon(weaponTypes[4])
-	};
-	const std::string	names[5] = {
-		"Jake", "Allan", "Alice", "Esra", "Gillian"
-	};
-	HumanB	humans[5] = {
-		HumanB(names[0]), HumanB(names[1]), HumanB(names[2]), HumanB(names[3]),
-		HumanB(names[4])
-	};
-	for (int i = 0; i < 5; i += 1)
-		humans[i].setWeapon(weapons[i]);
-	for (int i = 0; i < 5; i += 1) {
-		humans[i].attack();
-		expected += names[i] + " attacks with their " + weaponTypes[i] + '\n';
-	}
-	success = weapons[0].Owned() && weapons[1].Owned() && weapons[2].Owned()
-		&& weapons[3].Owned() && weapons[4].Owned();
-	
+TEST_LOGIC_START(hmnA_weapon_brakes)
+	const char	*gunName = "gun";
+	const char	*rifleName = "rifle";
+	const char	*jakeName = "Jake";
+	Weapon		gun(gunName);
+	Weapon		rifle(rifleName);
+	HumanA		jake(jakeName, gun);
+
+	jake.attack();
+	jake.setWeapon(rifle);
+	jake.attack();
+	rifle.~Weapon();
+	jake.attack();
+	jake.setWeapon(gun);
+	jake.attack();
+	expected = std::string(jakeName) + " attacks with their " + gunName + '\n'
+		+ jakeName + " attacks with their " + rifleName + '\n'
+		+ jakeName + " attacks with their " + gunName + '\n';
 TEST_LOGIC_END
 
-TEST_LOGIC_START(hmnB_single_weapon)
-	int					i;
-	const std::string	initWeaponType = "gun";
-	const std::string	weaponType = "knife";
-	Weapon		weapon(initWeaponType);
-	const std::string	names[5] = {
-		"Jake", "Allan", "Alice", "Esra", "Gillian"
-	};
-	weapon.setType(weaponType);
-	HumanB	humans[5] = {
-		HumanB(names[0]), HumanB(names[1]), HumanB(names[2]), HumanB(names[3]),
-		HumanB(names[4])
-	};
-	for (i = 0; i < 5; i += 1)
-		humans[i].setWeapon(weapon);
-	for (i = 0; i < 5; i += 1)
-		humans[i].attack();
-	success = weapon.Owned();
-	expected = names[0] + " attacks with their " + weaponType + '\n';
-	
+TEST_LOGIC_START(hmnB_and_hmnA_swap_theirs_weapons)
+	const char	*gunName = "gun";
+	const char	*rifleName = "rifle";
+	const char	*knifeName = "knife";
+	const char	*jakeName = "Jake";
+	const char	*donaldName = "Donald";
+	Weapon		gun(gunName);
+	Weapon		rifle(rifleName);
+	Weapon		knife(knifeName);
+	HumanA		jake(jakeName, gun);
+	HumanB		donald(donaldName);
+
+	donald.setWeapon(gun);
+	jake.attack();
+	donald.attack();
+	donald.setWeapon(rifle);
+	jake.attack();
+	donald.attack();
+	jake.setWeapon(rifle);
+	jake.attack();
+	donald.attack();
+	jake.setWeapon(knife);
+	donald.setWeapon(gun);
+	jake.setWeapon(rifle);
+	jake.attack();
+	donald.attack();
+	success = gun.Owned() && rifle.Owned() && !knife.Owned();
+	expected = std::string(jakeName) + " attacks with their " + gunName + '\n'
+		+ jakeName + " attacks with their " + gunName + '\n'
+		+ donaldName + " attacks with their " + rifleName + '\n'
+		+ jakeName + " attacks with their " + gunName + '\n'
+		+ donaldName + " attacks with their " + rifleName + '\n'
+		+ jakeName + " attacks with their " + rifleName + '\n'
+		+ donaldName + " attacks with their " + gunName + '\n';
 TEST_LOGIC_END
 
-TEST_LOGIC_START(hmnA_multiple_weapon)
-	const std::string	weaponTypes[5] = {
-		"gun", "rifle", "carabine", "shotgun", "knife"
-	};
-	Weapon		weapons[5] = {
-		Weapon(weaponTypes[0]), Weapon(weaponTypes[1]), Weapon(weaponTypes[2]),
-		Weapon(weaponTypes[3]), Weapon(weaponTypes[4])
-	};
-	const std::string	names[5] = {
-		"Jake", "Allan", "Alice", "Esra", "Gillian"
-	};
-	HumanA	humans[5] = {
-		HumanA(names[0], weapons[0]), HumanA(names[1], weapons[1]),
-		HumanA(names[2], weapons[2]), HumanA(names[3], weapons[3]),
-		HumanA(names[4], weapons[4])
-	};
-	for (int i = 0; i < 5; i += 1) {
-		humans[i].attack();
-		expected += names[i] + " attacks with their " + weaponTypes[i] + '\n';
-	}
-	success = !(weapons[0].Owned() || weapons[1].Owned() || weapons[2].Owned()
-		|| weapons[3].Owned() || weapons[4].Owned());
+TEST_LOGIC_START(hmnB_dies_hmnA_take_his_weapon)
+	const char	*nameA = "Jake";
+	const char	*nameB = "Rachel";
+	const char	*gunName = "gun";
+	const char	*rifleName = "rifle";
+	Weapon		gun(gunName);
+	Weapon		rifle(rifleName);
+	HumanA		ha(nameA, gun);
+	HumanB		hb(nameB);
+
+	hb.setWeapon(rifle);
+	ha.setWeapon(rifle);
+	ha.attack();
+	hb.attack();
+	hb.~HumanB();
+	ha.setWeapon(rifle);
+	ha.attack();
+	success = !gun.Owned() && rifle.Owned();
+	expected = std::string(nameA) + " attacks with their " + gunName + '\n'
+		+ nameB + " attacks with their " + rifleName + '\n' + nameA
+		+ " attacks with their " + rifleName + '\n';
 TEST_LOGIC_END
 
-TEST_LOGIC_START(hmnA_single_weapon)
-	const std::string	weaponType = "gun";
-	Weapon		weapon(weaponType);
-	const std::string	names[5] = {
-		"Jake", "Allan", "Alice", "Esra", "Gillian"
-	};
-	HumanA	humans[5] = {
-		HumanA(names[0], weapon), HumanA(names[1], weapon),
-		HumanA(names[2], weapon), HumanA(names[3], weapon),
-		HumanA(names[4], weapon)
-	};
-	weapon.setType("knife");
-	for (int i = 0; i < 5; i += 1) {
-		humans[i].attack();
-		expected += names[i] + " attacks with their " + weaponType + '\n';
-	}
-	success = !weapon.Owned();
+TEST_LOGIC_START(hmnA_dies_hmnB_take_his_weapon)
+	const char	*nameA = "Jake";
+	const char	*nameB = "Rachel";
+	const char	*type = "gun";
+	Weapon		weapon(type);
+	HumanA		ha(nameA, weapon);
+	HumanB		hb(nameB);
+
+	hb.setWeapon(weapon);
+	ha.attack();
+	hb.attack();
+	ha.~HumanA();
+	hb.setWeapon(weapon);
+	hb.attack();
+	expected = std::string(nameA) + " attacks with their " + type + '\n'
+		+ nameB + " attacks with their " + type + '\n';
+TEST_LOGIC_END
+
+TEST_LOGIC_START(hmnB_change_weapon_type)
+	const char	*name = "Jake";
+	const char	*type = "gun";
+	const char	*newType = "knife";
+	Weapon		weapon(type);
+	HumanB		h(name);
+
+	h.setWeapon(weapon);
+	h.attack();
+	weapon.setType(newType);
+	h.attack();
+	expected = std::string(name) + " attacks with their " + type + '\n'
+		+ name + " attacks with their " + newType + '\n';
+TEST_LOGIC_END
+
+TEST_LOGIC_START(hmnA_change_weapon_type)
+	const char	*name = "Jake";
+	const char	*type = "gun";
+	const char	*newType = "knife";
+	Weapon		weapon = Weapon(type);
+	HumanA		h(name, weapon);
+
+	h.attack();
+	weapon.setType(newType);
+	h.attack();
+	expected = std::string(name) + " attacks with their " + type + '\n'
+		+ name + " attacks with their " + newType + '\n';
 TEST_LOGIC_END

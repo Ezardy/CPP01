@@ -19,6 +19,7 @@ public:
 private:
 	std::string	name;
 	Weapon		*weapon;
+	std::string	_key;
 
 	void	_Copy(const HumanB &other);
 };
