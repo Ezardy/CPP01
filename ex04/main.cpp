@@ -47,6 +47,7 @@ ErrorCode	replace(const char *from, const char *to, std::ifstream &in,
 	ErrorCode			code = NO_ERR;
 	char *const			buffer = new char[bufferSize];
 	std::size_t			head = 0;
+	std::size_t			offset = 0;
 	std::size_t			shiftSize;
 	const char			*matchEnd;
 	const char			*matchStart;
@@ -54,18 +55,25 @@ ErrorCode	replace(const char *from, const char *to, std::ifstream &in,
 	while (code == NO_ERR && !in.eof()) {
 		try {
 			head += in.readsome(buffer + head, bufferSize - head);
-			matchEnd = buffer;
-			do {
-				matchStart = ft_strnchr(matchEnd, from[0], head);
-				if (matchStart)
-					matchEnd = ft_strncmp(matchStart, from, fromSize);
-			} while (matchStart && matchEnd != buffer + bufferSize && matchEnd);
+			if (offset) {
+				matchEnd = ft_strncmp(buffer + offset, from + offset, fromSize - offset);
+				offset = 0;
+			} else {
+				matchEnd = buffer;
+				do {
+					matchStart = ft_strnchr(matchEnd, from[0], head);
+					if (matchStart)
+						matchEnd = ft_strncmp(matchStart, from, fromSize);
+				} while (matchStart && matchEnd != buffer + bufferSize && matchEnd);
+			}
 			try {
 				if (matchStart) {
 					shiftSize = matchEnd ? matchStart - buffer : matchEnd - buffer;
 					out.write(buffer, matchStart - buffer);
-					if (matchEnd)
+					if (matchEnd) {
 						out.write(to, toSize);
+						offset = matchEnd - matchStart;
+					}
 					shift(buffer, bufferSize, shiftSize);
 					head -= shiftSize;
 				} else {
