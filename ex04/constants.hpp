@@ -1,0 +1,8 @@
+#ifndef EX04_CONSTANTS_HPP
+# define EX04_CONSTANTS_HPP
+
+# ifndef STANDARD_BUFFER_SIZE
+#  define STANDARD_BUFFER_SIZE 100
+# endif
+
+#endif
