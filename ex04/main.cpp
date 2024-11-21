@@ -11,7 +11,7 @@ ErrorCode	replace(const char *from, const char *to, std::ifstream &in,
 				std::ofstream &out);
 const char	*ft_strncmp(const char *str1, const char *str2, std::size_t n);
 const char	*ft_strnchr(const char *str, char c, std::size_t s);
-void		shift(char *buff, std::size_t size, std::size_t shift);
+void		shift(char *buff, const std::size_t size, const std::size_t shift);
 
 int	main(int argc, char **argv) {
 	ErrorCode		code = NO_ERR;
@@ -20,18 +20,19 @@ int	main(int argc, char **argv) {
 	if (argc != 4)
 		code = ARG_COUNT;
 	else {
-		try {
-			in.open(argv[1]);
+		out.exceptions(std::ofstream::badbit | std::ofstream::failbit);
+		in.open(argv[1]);
+		if (in.fail())
+			code = OPEN_READ_FILE;
+		else {
 			try {
 				out.open((std::string(argv[1]) + ".replace").c_str());
 				code = replace(argv[2], argv[3], in, out);
-			} catch (std::ofstream::failure) {
+			} catch (std::ofstream::failure &e) {
 				code = OPEN_WRITE_FILE;
+			} catch (const std::bad_alloc &e) {
+				code = RESERVE_MEM;
 			}
-		} catch (std::ifstream::failure) {
-			code = OPEN_READ_FILE;
-		} catch (std::bad_alloc) {
-			code = RESERVE_MEM;
 		}
 	}
 	print_error(code);
@@ -52,11 +53,13 @@ ErrorCode	replace(const char *from, const char *to, std::ifstream &in,
 	const char			*matchEnd;
 	const char			*matchStart;
 
-	while (code == NO_ERR && !in.eof()) {
+	while (code == NO_ERR && (head || !in.eof())) {
 		try {
-			head += in.readsome(buffer + head, bufferSize - head);
+			in.read(buffer + head, bufferSize - head);
+			head += in.gcount();
 			if (offset) {
 				matchEnd = ft_strncmp(buffer + offset, from + offset, fromSize - offset);
+				matchStart = buffer;
 				offset = 0;
 			} else {
 				matchEnd = buffer;
@@ -64,26 +67,28 @@ ErrorCode	replace(const char *from, const char *to, std::ifstream &in,
 					matchStart = ft_strnchr(matchEnd, from[0], head);
 					if (matchStart)
 						matchEnd = ft_strncmp(matchStart, from, fromSize);
-				} while (matchStart && matchEnd != buffer + bufferSize && matchEnd);
+				} while (matchStart && matchEnd != buffer + head && matchEnd);
 			}
 			try {
 				if (matchStart) {
-					shiftSize = matchEnd ? matchStart - buffer : matchEnd - buffer;
-					out.write(buffer, matchStart - buffer);
-					if (matchEnd) {
-						out.write(to, toSize);
+					shiftSize = matchStart - buffer;
+					out.write(buffer, shiftSize);
+					if (matchEnd)
 						offset = matchEnd - matchStart;
+					else {
+						out.write(to, toSize);
+						shiftSize += fromSize;
 					}
-					shift(buffer, bufferSize, shiftSize);
+					shift(buffer, head, shiftSize);
 					head -= shiftSize;
 				} else {
-					out.write(buffer, bufferSize);
+					out.write(buffer, head);
 					head = 0;
 				}
-			} catch (std::ofstream::failure) {
+			} catch (const std::ofstream::failure &e) {
 				code = WRITE_FILE;
 			}
-		} catch (std::ifstream::failure) {
+		} catch (const std::ifstream::failure &e) {
 			code = READ_FILE;
 		}
 	}
@@ -111,4 +116,23 @@ void	print_error(ErrorCode code) {
 				break;
 		}
 	}
+}
+
+const char	*ft_strncmp(const char *str1, const char *str2, std::size_t n) {
+	for (; n && *str1 && *str2 && *str1 == *str2; n -= 1, str1 += 1, str2 += 1);
+	if (!n)
+		str1 = NULL;
+	return str1;
+}
+
+const char	*ft_strnchr(const char *str, char c, std::size_t s) {
+	for (; s && *str && *str != c; s -= 1, str += 1);
+	if (!s || (c && !*str))
+		str = NULL;
+	return str;
+}
+
+void		shift(char *buff, const std::size_t size, const std::size_t shift) {
+	for (std::size_t i = 0; i < size - shift; i += 1)
+		buff[i] = buff[i + shift];
 }
