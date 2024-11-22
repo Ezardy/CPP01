@@ -114,7 +114,7 @@ static void	count_matches(ReplaceData &d) {
 }
 
 static void	output_buffer(ReplaceData &d) {
-	if (d.matchEnd == d.buffer + d.head || d.matchesCount) {
+	if (d.matchStart && (d.matchEnd == d.buffer + d.head || d.matchesCount)) {
 		d.shiftSize = d.matchStart - d.buffer;
 		d.out.write(d.buffer, d.shiftSize);
 		if (d.matchesCount) {
