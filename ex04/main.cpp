@@ -9,7 +9,8 @@
 void		print_error(ErrorCode code);
 ErrorCode	replace(const char *from, const char *to, std::ifstream &in,
 				std::ofstream &out);
-const char	*ft_strncmp(const char *str1, const char *str2, std::size_t n);
+const char	*ft_strncmp(const char *str1, std::size_t size1, const char *str2,
+				std::size_t size2);
 const char	*ft_strnchr(const char *str, char c, std::size_t s);
 void		shift(char *buff, const std::size_t size, const std::size_t shift);
 
@@ -19,6 +20,8 @@ int	main(int argc, char **argv) {
 	std::ofstream	out;
 	if (argc != 4)
 		code = ARG_COUNT;
+	else if (!argv[2][0])
+		code = SUBSTR_EMPTY;
 	else {
 		out.exceptions(std::ofstream::badbit | std::ofstream::failbit);
 		in.open(argv[1]);
@@ -50,6 +53,7 @@ ErrorCode	replace(const char *from, const char *to, std::ifstream &in,
 	std::size_t			head = 0;
 	std::size_t			offset = 0;
 	std::size_t			shiftSize;
+	std::size_t			matchesCount;
 	const char			*matchEnd;
 	const char			*matchStart;
 
@@ -58,16 +62,20 @@ ErrorCode	replace(const char *from, const char *to, std::ifstream &in,
 			in.read(buffer + head, bufferSize - head);
 			head += in.gcount();
 			if (offset) {
-				matchEnd = ft_strncmp(buffer + offset, from + offset, fromSize - offset);
+				matchEnd = ft_strncmp(buffer + offset, head - offset,
+					from + offset, fromSize - offset);
 				matchStart = buffer;
 				offset = 0;
 			} else {
 				matchEnd = buffer;
 				do {
-					matchStart = ft_strnchr(matchEnd, from[0], head);
-					if (matchStart)
-						matchEnd = ft_strncmp(matchStart, from, fromSize);
-				} while (matchStart && matchEnd != buffer + head && matchEnd);
+					if ((matchStart = ft_strnchr(matchEnd, from[0], head))) {
+						if (!(matchEnd = ft_strncmp(matchStart, buffer + head - matchStart, from, fromSize))) {
+							for (matchesCount = 1; matchEnd == NULL; matchesCount += 1)
+								matchEnd
+						}
+					}
+				} while (matchStart && matchEnd != buffer + head);
 			}
 			try {
 				if (matchStart) {
@@ -79,15 +87,16 @@ ErrorCode	replace(const char *from, const char *to, std::ifstream &in,
 						out.write(to, toSize);
 						shiftSize += fromSize;
 					}
-					shift(buffer, head, shiftSize);
 					head -= shiftSize;
 				} else {
 					out.write(buffer, head);
+					shiftSize = 0;
 					head = 0;
 				}
 			} catch (const std::ofstream::failure &e) {
 				code = WRITE_FILE;
 			}
+			shift(buffer, head, shiftSize);
 		} catch (const std::ifstream::failure &e) {
 			code = READ_FILE;
 		}
@@ -100,39 +109,26 @@ void	print_error(ErrorCode code) {
 	if (code != NO_ERR) {
 		switch (code) {
 			case ARG_COUNT: std::cerr << "Wrong arguments number\n"
-				"Usage: test file substring_to_be_replaced substring_to_replace\n";
+				"Usage: test file substring_to_be_replaced substring_to_replac"
+				"e\n";
 				break;
 			case RESERVE_MEM: std::cerr << "Can't reserve enough memory\n";
 				break;
-			case OPEN_READ_FILE: std::cerr << "Can't open the file for reading\n";
+			case OPEN_READ_FILE: std::cerr << "Can't open the file for reading"
+				"\n";
 				break;
-			case OPEN_WRITE_FILE: std::cerr << "Can't open the file for writing\n";
+			case OPEN_WRITE_FILE: std::cerr << "Can't open the file for writing"
+				"\n";
 				break;
 			case READ_FILE: std::cerr << "Can't read from the file\n";
 				break;
 			case WRITE_FILE: std::cerr << "Can't write to the file\n";
 				break;
+			case SUBSTR_EMPTY: std::cerr << "The substring to be replaced canno"
+				"t be empty\n";
+				break;
 			default: std::cerr << "Unknown error";
 				break;
 		}
 	}
-}
-
-const char	*ft_strncmp(const char *str1, const char *str2, std::size_t n) {
-	for (; n && *str1 && *str2 && *str1 == *str2; n -= 1, str1 += 1, str2 += 1);
-	if (!n)
-		str1 = NULL;
-	return str1;
-}
-
-const char	*ft_strnchr(const char *str, char c, std::size_t s) {
-	for (; s && *str && *str != c; s -= 1, str += 1);
-	if (!s || (c && !*str))
-		str = NULL;
-	return str;
-}
-
-void		shift(char *buff, const std::size_t size, const std::size_t shift) {
-	for (std::size_t i = 0; i < size - shift; i += 1)
-		buff[i] = buff[i + shift];
 }

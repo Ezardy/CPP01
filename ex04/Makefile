@@ -1,18 +1,28 @@
-BUFFER_SIZE=100
+BUFFER_SIZE?=100
 
-all: test
+all: replace
 
 iflags=-Wall -Wextra -Werror -std=c++98 -DSTANDARD_BUFFER_SIZE=$(BUFFER_SIZE)
+command=c++ $(iflags) -o $@ -c $<
+
+src=main buffer_manipulations
+obj=$(addsuffix .o, $(src))
 
 debug:iflags+=-g
-debug: test
+debug: replace
 
-test: main.cpp ErrorCode.hpp constants.hpp Makefile
-	c++ $(iflags) -o $@ $<
+replace: $(obj)
+	c++ -o $@ $(obj)
+
+main.o: main.cpp constants.hpp ErrorCode.hpp Makefile
+	$(command)
+
+buffer_manipulations.o: buffer_manipulations.cpp Makefile
+	$(command)
 
 clean:
-	rm -f test
+	rm -f replace
 
 fclean: clean
 
-re: fclean test
+re: fclean replace

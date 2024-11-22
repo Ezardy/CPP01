@@ -8,6 +8,7 @@ enum ErrorCode {
 	OPEN_READ_FILE,
 	OPEN_WRITE_FILE,
 	READ_FILE,
-	WRITE_FILE
+	WRITE_FILE,
+	SUBSTR_EMPTY
 };
 #endif
