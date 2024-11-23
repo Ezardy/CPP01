@@ -64,7 +64,6 @@ static ErrorCode	replace(const char *from, const char *to, std::ifstream &in,
 		0,
 		0,
 		0,
-		0,
 		NULL,
 		NULL
 	};
@@ -73,21 +72,12 @@ static ErrorCode	replace(const char *from, const char *to, std::ifstream &in,
 		try {
 			in.read(d.buffer + d.head, bufferSize - d.head);
 			d.head += in.gcount();
-			if (d.offset) {
-				d.matchEnd = ft_strncmp(d.buffer + d.offset, d.head - d.offset,
-					from + d.offset, fromSize - d.offset);
-				d.matchesCount += !d.matchEnd;
-				d.matchStart = d.buffer;
-				d.offset = 0;
-			} else
-				count_matches(d);
+			count_matches(d);
 			try {
 				output_buffer(d);
 			} catch (const std::ofstream::failure &e) {
 				d.code = WRITE_FILE;
 			}
-			shift(d.buffer, d.head, d.shiftSize);
-			d.head -= d.shiftSize;
 		} catch (const std::ifstream::failure &e) {
 			d.code = READ_FILE;
 		}
@@ -97,37 +87,52 @@ static ErrorCode	replace(const char *from, const char *to, std::ifstream &in,
 }
 
 static void	count_matches(ReplaceData &d) {
-	d.matchEnd = d.buffer;
-	do {
-		if ((d.matchStart = ft_strnchr(d.matchEnd, d.from[0], d.head))) {
-			if (!(d.matchEnd = ft_strncmp(d.matchStart,
-						d.buffer + d.head - d.matchStart,
-						d.from, d.fromSize)))
-				for (d.matchesCount = 1;
-					d.buffer + d.head - d.matchStart - d.fromSize * d.matchesCount >= d.fromSize
-					&& !(d.matchEnd = ft_strncmp(d.matchStart + d.fromSize * d.matchesCount,
-						d.buffer + d.head - d.matchStart - d.fromSize * d.matchesCount,
-						d.from, d.fromSize)); d.matchesCount += 1);
+	if (d.offset) {
+		d.matchStart = d.buffer;
+		d.matchEnd = ft_strncmp(d.matchStart + d.offset,
+			d.buffer + d.head - d.matchStart - d.offset,
+			d.from + d.offset, d.fromSize - d.offset);
+		d.offset = 0;
+	} else {
+		if ((d.matchStart = ft_strnchr(d.buffer, d.from[0], d.head)))
+			d.matchEnd = ft_strncmp(d.matchStart,
+				d.buffer + d.head - d.matchStart, d.from, d.fromSize);
+	}
+	while (d.matchStart && d.matchEnd != d.buffer + d.head && !d.matchesCount) {
+		if (d.matchEnd == NULL)
+			for (d.matchesCount = 1; d.buffer + d.head - d.matchStart
+				- d.fromSize * d.matchesCount >= d.fromSize && !(d.matchEnd
+					= ft_strncmp(d.matchStart + d.fromSize * d.matchesCount,
+						d.buffer + d.head - d.matchStart - d.fromSize
+						* d.matchesCount, d.from, d.fromSize));
+				d.matchesCount += 1);
+		else {
+			if ((d.matchStart = ft_strnchr(d.matchEnd, d.from[0],
+					d.buffer + d.head - d.matchEnd)))
+				d.matchEnd = ft_strncmp(d.matchStart,
+					d.buffer + d.head - d.matchStart, d.from, d.fromSize);
 		}
-	} while (d.matchStart && d.matchEnd != d.buffer + d.head
-			&& !d.matchesCount);
+	}
+	if (d.matchEnd == d.buffer + d.head)
+		d.offset = d.matchEnd - d.matchStart - 1;
 }
 
 static void	output_buffer(ReplaceData &d) {
-	if (d.matchStart && (d.matchEnd == d.buffer + d.head || d.matchesCount)) {
-		d.shiftSize = d.matchStart - d.buffer;
-		d.out.write(d.buffer, d.shiftSize);
-		if (d.matchesCount) {
-			d.shiftSize += d.fromSize * d.matchesCount;
-			for (; d.matchesCount > 0; d.matchesCount -= 1)
-				d.out.write(d.to, d.toSize);
-		} else
-			d.offset = d.matchEnd - d.matchStart;
+	std::size_t	shiftSize;
+	
+	if (d.matchStart) {
+		shiftSize = d.matchStart - d.buffer;
+		d.out.write(d.buffer, shiftSize);
+		shiftSize += d.fromSize * d.matchesCount;
+		for (; d.matchesCount > 0; d.matchesCount -= 1)
+			d.out.write(d.to, d.toSize);
 	} else {
 		d.out.write(d.buffer, d.head);
-		d.shiftSize = 0;
+		shiftSize = 0;
 		d.head = 0;
 	}
+	shift(d.buffer, d.head, shiftSize);
+	d.head -= shiftSize;
 }
 
 static void	print_error(ErrorCode code) {

@@ -18,7 +18,6 @@ struct ReplaceData {
 	char *const			buffer;
 	std::size_t			head;
 	std::size_t			offset;
-	std::size_t			shiftSize;
 	std::size_t			matchesCount;
 	const char			*matchEnd;
 	const char			*matchStart;
