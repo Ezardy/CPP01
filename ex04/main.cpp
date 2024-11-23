@@ -6,10 +6,11 @@
 #include "ReplaceData.hpp"
 #include "constants.hpp"
 
-const char			*ft_strncmp(const char *str1, std::size_t size1, const char *str2,
-						std::size_t size2);
+const char			*ft_strncmp(const char *str1, std::size_t size1,
+						const char *str2, std::size_t size2);
 const char			*ft_strnchr(const char *str, char c, std::size_t s);
-void				shift(char *buff, const std::size_t size, const std::size_t shift);
+void				shift(char *buff, const std::size_t size,
+						const std::size_t shift);
 
 static void			print_error(ErrorCode code);
 static ErrorCode	replace(const char *from, const char *to, std::ifstream &in,
