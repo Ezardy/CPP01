@@ -102,7 +102,7 @@ while [[ $# -gt 0 ]]; do
 	case $1 in
 		-v|--valgrind)
 			if [[ $(uname -s) == "Linux" ]]; then
-				VALGRIND="valgrind -q --leak-check=full --show-leak-kinds=all --track-origins=yes"
+				VALGRIND="valgrind --error-exitcode=100 -q --leak-check=full --show-leak-kinds=all --track-origins=yes"
 			fi
 			shift
 			;;
