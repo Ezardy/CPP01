@@ -1,0 +1,13 @@
+test
+Zombie.o
+main.o
+ex00/newZombie.o
+ex00/randomChump.o
+ex01/zombieHorde.o
+ex03/HumanA.o
+ex03/HumanB.o
+ex03/Weapon.o
+*replace*
+!ex04/tests/readonly.replace
+ex04/buffer_manipulations.o
+ex05/Harl.o
