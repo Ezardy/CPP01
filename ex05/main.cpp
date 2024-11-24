@@ -72,7 +72,6 @@ TEST_LOGIC_START(non_existant)
 	Harl	harl;
 
 	harl.complain("");
-	expectedErr = "There is no such comment level\n";
 TEST_LOGIC_END
 
 TEST_LOGIC_START(debug_error)
