@@ -10,4 +10,5 @@ ex03/Weapon.o
 *replace*
 !ex04/tests/readonly.replace
 ex04/buffer_manipulations.o
-ex05/Harl.o
+Harl.o
+ex06/harlFilter

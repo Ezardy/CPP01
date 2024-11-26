@@ -52,8 +52,8 @@ void	Harl::info(void) const {
 }
 
 void	Harl::warning(void) const {
-	std::cerr << "I think I deserve to have some extra bacon for free. I've bee"
-		"n coming for years whereas you started working here since last month."
+	std::cerr << "I think I deserve to have some extra bacon for free.\nI've be"
+		"en coming for years whereas you started working here since last month."
 		"\n";
 }
 

@@ -5,6 +5,7 @@ enum LogLevel {
 	DEBUG,
 	INFO,
 	WARNING,
-	ERROR
+	ERROR,
+	UNKNOWN_LEVEL
 };
 #endif
