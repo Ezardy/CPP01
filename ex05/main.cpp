@@ -95,9 +95,9 @@ TEST_LOGIC_START(warning)
 	Harl	harl;
 
 	harl.complain("WARNING");
-	expectedErr = "I think I deserve to have some extra bacon for free. I've be"
-		"en coming for years whereas you started working here since last month."
-		"\n";
+	expectedErr = "I think I deserve to have some extra bacon for free.\nI've b"
+		"een coming for years whereas you started working here since last month"
+		".\n";
 TEST_LOGIC_END
 
 TEST_LOGIC_START(info)
