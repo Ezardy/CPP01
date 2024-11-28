@@ -1,165 +1,141 @@
-#include <fstream>
 #include <iostream>
-#include <cstring>
-#include <new>
+#include <fstream>
+#include <string>
 
-#include "ReplaceData.hpp"
-#include "constants.hpp"
+#include "ErrorCode.hpp"
 
-const char			*ft_strncmp(const char *str1, std::size_t size1,
-						const char *str2, std::size_t size2);
-const char			*ft_strnchr(const char *str, char c, std::size_t s);
-void				shift(char *buff, const std::size_t size,
-						const std::size_t shift);
-
-static void			print_error(ErrorCode code);
-static ErrorCode	replace(const char *from, const char *to, std::ifstream &in,
-						std::ofstream &out);
-static void			count_matches(ReplaceData &d);
-static void			output_buffer(ReplaceData &d);
+static ErrorCode		replace(std::ifstream &in, std::ofstream &out,
+							const std::string from, const std::string to);
+static std::ifstream	&getline(std::ifstream &in, std::string &buffer);
+static void				print_error(ErrorCode code);
+static void				replace_in_buffer(std::ofstream &out,
+							std::string &buffer, std::string &tmp,
+							const std::string &from, const std::string &to);
 
 int	main(int argc, char **argv) {
-	ErrorCode		code = NO_ERR;
-	std::ifstream	in;
-	std::ofstream	out;
-	if (argc != 4)
-		code = ARG_COUNT;
-	else if (!argv[2][0])
-		code = SUBSTR_EMPTY;
-	else {
-		out.exceptions(std::ofstream::badbit | std::ofstream::failbit);
-		in.open(argv[1]);
-		if (in.fail())
-			code = OPEN_READ_FILE;
-		else {
-			try {
-				out.open((std::string(argv[1]) + ".replace").c_str());
-				code = replace(argv[2], argv[3], in, out);
-			} catch (std::ofstream::failure &e) {
+	ErrorCode	code;
+	
+	if (argc == 4) {
+		try {
+			std::ifstream	in(argv[1]);
+			std::ofstream	out((std::string(argv[1]) + ".replace").c_str());
+
+			if (!in)
+				code = OPEN_READ_FILE;
+			else if (!out)
 				code = OPEN_WRITE_FILE;
-			} catch (const std::bad_alloc &e) {
-				code = RESERVE_MEM;
-			}
+			else
+				code = replace(in, out, argv[2], argv[3]);
+		} catch (const std::bad_alloc &e) {
+			code = RESERVE_MEM;
 		}
-	}
+	} else
+		code = ARG_COUNT;
 	print_error(code);
 	return code;
 }
 
-static ErrorCode	replace(const char *from, const char *to, std::ifstream &in,
-				std::ofstream &out) {
-	const std::size_t	fromSize = strlen(from);
-	const std::size_t	toSize = strlen(to);
-	const std::size_t	bufferSize = (fromSize > STANDARD_BUFFER_SIZE
-		? fromSize : STANDARD_BUFFER_SIZE);
-	ReplaceData			d = {
-		from,
-		to,
-		in,
-		out,
-		fromSize,
-		toSize,
-		bufferSize,
-		NO_ERR,
-		new char[bufferSize],
-		0,
-		0,
-		0,
-		NULL,
-		NULL
-	};
+static ErrorCode	replace(std::ifstream &in, std::ofstream &out,
+						const std::string from, const std::string to) {
+	ErrorCode	code = NO_ERR;
+	std::string	buffer;
+	std::string	tmp;
 
-	while (d.code == NO_ERR && (d.head || !in.eof())) {
-		try {
-			in.read(d.buffer + d.head, bufferSize - d.head);
-			d.head += in.gcount();
-			count_matches(d);
-			try {
-				output_buffer(d);
-			} catch (const std::ofstream::failure &e) {
-				d.code = WRITE_FILE;
+	try {
+		if (from.empty())
+			throw std::invalid_argument("from is empty");
+		tmp.reserve(to.size());
+		while (!in.bad() && !out.bad() && (!buffer.empty()
+					|| !getline(in, buffer).eof() || !buffer.empty())) {
+			if (tmp.empty())
+				replace_in_buffer(out, buffer, tmp, from, to);
+			else if (tmp.size() < from.size()) {
+				std::size_t	count = from.size() - tmp.size();
+				tmp.append(buffer.substr(0, count));
+				buffer.erase(0, count);
 			}
-		} catch (const std::ifstream::failure &e) {
-			d.code = READ_FILE;
+			else if (tmp.compare(from)) {
+				std::size_t	match_pos;
+				if ((match_pos = tmp.find(from[0])) == std::string::npos
+					|| (match_pos == 0 && (match_pos = tmp.find(from[0], 1))
+						== std::string::npos)) {
+					out << tmp;
+					tmp.erase();
+				} else {
+					out << tmp.substr(0, match_pos);
+					tmp.erase(0, match_pos);
+				}
+			} else {
+				out << to;
+				tmp.erase();
+			}
 		}
+		out << tmp;
+		if (in.bad())
+			code = READ_FILE;
+		else if (out.bad())
+			code = WRITE_FILE;
+	} catch (const std::bad_alloc &e) {
+		code = RESERVE_MEM;
+	} catch (const std::invalid_argument &e) {
+		code = SUBSTR_EMPTY;
 	}
-	delete [] d.buffer;
-	return d.code;
+	return code;
 }
 
-static void	count_matches(ReplaceData &d) {
-	if (d.offset) {
-		d.matchStart = d.buffer;
-		d.matchEnd = ft_strncmp(d.matchStart + d.offset,
-			d.buffer + d.head - d.matchStart - d.offset,
-			d.from + d.offset, d.fromSize - d.offset);
-		d.offset = 0;
-	} else {
-		if ((d.matchStart = ft_strnchr(d.buffer, d.from[0], d.head)))
-			d.matchEnd = ft_strncmp(d.matchStart,
-				d.buffer + d.head - d.matchStart, d.from, d.fromSize);
-	}
-	while (d.matchStart && d.matchEnd != d.buffer + d.head && !d.matchesCount) {
-		if (d.matchEnd == NULL)
-			for (d.matchesCount = 1; d.buffer + d.head - d.matchStart
-				- d.fromSize * d.matchesCount >= d.fromSize && !(d.matchEnd
-					= ft_strncmp(d.matchStart + d.fromSize * d.matchesCount,
-						d.buffer + d.head - d.matchStart - d.fromSize
-						* d.matchesCount, d.from, d.fromSize));
-				d.matchesCount += 1);
+static void	replace_in_buffer(std::ofstream &out, std::string &buffer,
+				std::string &tmp, const std::string &from,
+				const std::string &to) {
+	std::size_t	match_pos;
+	if ((match_pos = buffer.find(from)) == std::string::npos) {
+		std::size_t	pos = buffer.size() >= from.size() ? buffer.size() - from.size() + 1 : 0;
+		if ((match_pos = buffer.find(from[0], pos)) == std::string::npos)
+			out << buffer;
 		else {
-			if ((d.matchStart = ft_strnchr(d.matchEnd, d.from[0],
-					d.buffer + d.head - d.matchEnd)))
-				d.matchEnd = ft_strncmp(d.matchStart,
-					d.buffer + d.head - d.matchStart, d.from, d.fromSize);
+			tmp = buffer.substr(match_pos);
+			out << buffer.substr(0, match_pos);
 		}
+		buffer.erase();
+	} else {
+		out << buffer.substr(0, match_pos) << to;
+		buffer.erase(0, match_pos + from.size());
 	}
-	if (d.matchEnd == d.buffer + d.head)
-		d.offset = d.matchEnd - d.matchStart - 1;
 }
 
-static void	output_buffer(ReplaceData &d) {
-	std::size_t	shiftSize;
-	
-	if (d.matchStart) {
-		shiftSize = d.matchStart - d.buffer;
-		d.out.write(d.buffer, shiftSize);
-		shiftSize += d.fromSize * d.matchesCount;
-		for (; d.matchesCount > 0; d.matchesCount -= 1)
-			d.out.write(d.to, d.toSize);
-	} else {
-		d.out.write(d.buffer, d.head);
-		shiftSize = 0;
-		d.head = 0;
-	}
-	shift(d.buffer, d.head, shiftSize);
-	d.head -= shiftSize;
+static std::ifstream	&getline(std::ifstream &in, std::string &buffer) {
+	if (!std::getline(in, buffer).eof())
+		buffer.append(1, '\n');
+	return in;
 }
 
 static void	print_error(ErrorCode code) {
-	if (code != NO_ERR) {
-		switch (code) {
-			case ARG_COUNT: std::cerr << "Wrong arguments number\n"
-				"Usage: test file substring_to_be_replaced substring_to_replac"
-				"e\n";
-				break;
-			case RESERVE_MEM: std::cerr << "Can't reserve enough memory\n";
-				break;
-			case OPEN_READ_FILE: std::cerr << "Can't open the file for reading"
-				"\n";
-				break;
-			case OPEN_WRITE_FILE: std::cerr << "Can't open the file for writing"
-				"\n";
-				break;
-			case READ_FILE: std::cerr << "Can't read from the file\n";
-				break;
-			case WRITE_FILE: std::cerr << "Can't write to the file\n";
-				break;
-			case SUBSTR_EMPTY: std::cerr << "The substring to be replaced canno"
-				"t be empty\n";
-				break;
-			default: std::cerr << "Unknown error";
-				break;
-		}
+	switch (code) {
+		case NO_ERR:
+			break;
+		case ARG_COUNT:
+			std::cerr << "Wrong command line arguments count\n""Usage: "
+				"test file substring_to_be_replaced substring_to_replace\n";
+			break;
+		case RESERVE_MEM:
+			std::cerr << "Memory allocation failed\n";
+			break;
+		case OPEN_READ_FILE:
+			std::cerr << "Can't open the file for reading\n";
+			break;
+		case OPEN_WRITE_FILE:
+			std::cerr << "Can't open the file for writing\n";
+			break;
+		case READ_FILE:
+			std::cerr << "The file for reading is corrupted\n";
+			break;
+		case WRITE_FILE:
+			std::cerr << "The file for writing is corrupted\n";
+			break;
+		case SUBSTR_EMPTY:
+			std::cerr << "The replacing substring can't be empty\n";
+			break;
+		default:
+			std::cerr << "Unknown error\n";
+			break;
 	}
 }

@@ -9,7 +9,7 @@
 			"request": "launch",
 			"name": "ex04",
 			"program": "${workspaceFolder}/ex04/replace",
-			"args": ["ex04/tests/repeatitive_from", "from", "to"],
+			"args": ["ex04/tests/submatch_in_middle", "fro\nm", "to"],
 			"cwd": "${workspaceFolder}",
 			"preLaunchTask": "build ex04"
 		}

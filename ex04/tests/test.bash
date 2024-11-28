@@ -10,34 +10,30 @@ test_driver() {
 }
 
 test_main() {
-	for i in {1..20}; do
-		echo "STANDARD_BUFFER_SIZER = $i"
-		build $i
-		test repeatitive_from from to &&
-		manual_test newlines $'\n' "" "hello" &&
-		test repeatitive_from "fwef" "?" &&
-		test big_text "Suspend" "MIMIMI Pappa burritto" &&
-		test liquam_after_full "liquam" ';' &&
-		test liquam_all_letters_in_but_not_at_start "liquam" ';' &&
-		test liquam_first_letter "liquam" ';' &&
-		test liquam_one_letter_out "liquam" ';' &&
-		test big_text "liquam" $';' &&
-		test big_text "non" "stop" &&
-		test big_text "turpis" "mama" &&
-		test big_text "oh-oh mamargarita" "" &&
-		test big_text "?" "kong"
-		if [[ $? -ne 0 ]]; then
-			break
-		fi
-	done
+	build &&
+	test repeatitive_from from to &&
+	manual_test newlines $'\n' "" "hello" &&
+	test repeatitive_from "fwef" "?" &&
+	test big_text "Suspend" "MIMIMI Pappa burritto" &&
+	test liquam_after_full "liquam" ';' &&
+	test liquam_all_letters_in_but_not_at_start "liquam" ';' &&
+	test liquam_first_letter "liquam" ';' &&
+	test liquam_one_letter_out "liquam" ';' &&
+	test big_text "liquam" $';' &&
+	test big_text "non" "stop" &&
+	test big_text "turpis" "mama" &&
+	test big_text "oh-oh mamargarita" "" &&
+	test big_text "?" "kong" &&
+	manual_test submatch_in_middle $'f\nrom' "to" $'q23fawgfwegwfrogw3323fffasdto' &&
+	manual_test three_nl $'\n\n\n' ' ' $'ONE TWO THREE NEWLINES\nTO\nSPACE'
 }
 
 test_invalids() {
-	build 14
-	check_error big_text "non" "" 1 $'Wrong arguments number\nUsage: test file substring_to_be_replaced substring_to_replace' &&
+	build &&
+	check_error big_text "non" "" 1 $'Wrong command line arguments count\nUsage: test file substring_to_be_replaced substring_to_replace' &&
 	check_error big_tex "non" "1" 3 $'Can\'t open the file for reading' &&
 	check_error readonly "readonly" "write" 4 $'Can\'t open the file for writing' &&
-	check_error big_text "" "non" 7 $'The substring to be replaced cannot be empty'
+	check_error big_text "" "non" 7 $'The replacing substring can\'t be empty'
 }
 
 check_error() {
@@ -95,7 +91,8 @@ build() {
 	else
 		target=all
 	fi
-	make BUFFER_SIZE=$1 -C .. fclean $target
+	make -C .. fclean $target
+	return $?
 }
 
 while [[ $# -gt 0 ]]; do
