@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/zsh
 
 test_driver() {
 	if [[ ! -z $MAIN ]]; then
@@ -71,7 +71,7 @@ manual_test() {
 
 test() {
 	echo "[TEST '$1' '$2' '$3']"
-	sed -e s/"$2"/"$3"/g "$1" > "$1.sed.replace"
+	(tmp=$(sed -e s/"$2"/"$3"/g "$1") && echo -n $tmp > "$1.sed.replace") &&
 	$VALGRIND ./../replace "$1" "$2" "$3" &&
 	diff "$1.replace" "$1.sed.replace"
 	local output=$?
