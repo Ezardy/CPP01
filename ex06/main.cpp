@@ -17,6 +17,7 @@ int	main(int argc, char **argv) {
 			for (i = 0; levelStrings[i] != argv[1] && i < 4; i += 1);
 			harl_filter(static_cast<LogLevel>(i), levelStrings);
 			harl_program(levelStrings);
+			error = 0;
 		} else
 			error = 1;
 	} catch (const std::bad_alloc &e) {
