@@ -33,6 +33,7 @@ static bool	hmnA_weapon_brakes(void);
 static bool	hmnB_weapon_brakes(void);
 static bool	invalids(void);
 static bool	hmnB_tries_take_invalid_and_owned_weapons(void);
+static bool	default_test(void);
 
 int	main() {
 	bool	success = true;
@@ -41,7 +42,8 @@ int	main() {
 		hmnA_dies_hmnB_take_his_weapon,
 		hmnB_and_hmnB_swap_theirs_weapons, hmnA_weapon_brakes,
 		hmnB_weapon_brakes, invalids,
-		hmnB_tries_take_invalid_and_owned_weapons
+		hmnB_tries_take_invalid_and_owned_weapons,
+		default_test
 	};
 	size_t	tests_count = sizeof(tests) / sizeof(tests[0]);
 	for (size_t i = 0; success && i < tests_count; i += 1) {
@@ -52,6 +54,28 @@ int	main() {
 		std::cout << "OK\n";
 	return success;
 }
+
+TEST_LOGIC_START(default_test)
+{
+	Weapon club = Weapon("crude spiked club");
+	HumanA bob("Bob", club);
+	bob.attack();
+	club.setType("some other type of club");
+	bob.attack();
+}
+{
+	Weapon club = Weapon("crude spiked club");
+	HumanB jim("Jim");
+	jim.setWeapon(club);
+	jim.attack();
+	club.setType("some other type of club");
+	jim.attack();
+}
+	expected = "Bob attacks with their crude spiked club\n"
+		"Bob attacks with their some other type of club\n"
+		"Jim attacks with their crude spiked club\n"
+		"Jim attacks with their some other type of club\n";
+TEST_LOGIC_END
 
 TEST_LOGIC_START(hmnB_tries_take_invalid_and_owned_weapons)
 	const char	*gunName = "gun";
