@@ -1,6 +1,5 @@
 #include <iostream>
 #include <sstream>
-#include <limits>
 
 #include "Zombie.hpp"
 
@@ -65,16 +64,15 @@ TEST_LOGIC_START(zombieHorde_test)
 TEST_LOGIC_END
 
 TEST_LOGIC_START(standard_heap_zombie_destruction_test)
-	Zombie				*zombies[5] = {
-		new Zombie, new Zombie, new Zombie, new Zombie, new Zombie
-	};
-	success = zombies[0] && zombies[1] && zombies[2] && zombies[3] && zombies[4];
-	if (success) {
-		std::streambuf		*old = std::cout.rdbuf();
-		std::ostringstream	oss;
-		std::string			message;
-		std::string			name;
-		size_t				pos_of_space;
+	std::streambuf		*old = std::cout.rdbuf();
+	std::ostringstream	oss;
+	std::string			message;
+	std::string			name;
+	size_t				pos_of_space;
+	try {
+		Zombie				*zombies[5] = {
+			new Zombie, new Zombie, new Zombie, new Zombie, new Zombie
+		};
 		for (int i = 4; success && i >= 0; i -= 1) {
 			std::cout.rdbuf(oss.rdbuf());
 			delete zombies[i];
@@ -87,19 +85,20 @@ TEST_LOGIC_START(standard_heap_zombie_destruction_test)
 			std::cout << message;
 			success = name + " destructed\n" == message;
 		}
-	} else
+	} catch (const std::bad_alloc &e) {
+		success = false;
 		std::cerr << "Allocation of one or more Zombie instances failed\n";
+	}
 TEST_LOGIC_END
 
 TEST_LOGIC_START(standard_heap_zombie_announce_test)
-	Zombie				*zombies = new Zombie[5];
-	success = zombies != NULL;
-	if (success) {
-		std::streambuf		*old = std::cout.rdbuf();
-		std::string			announcement;
-		std::string			name;
-		size_t				pos_of_colon;
-		std::ostringstream	oss;
+	std::streambuf		*old = std::cout.rdbuf();
+	std::string			announcement;
+	std::string			name;
+	size_t				pos_of_colon;
+	std::ostringstream	oss;
+	try {
+		Zombie				*zombies = new Zombie[5];
 
 		for (int i = 0; success && i < 5; i += 1) {
 			std::cout.rdbuf(oss.rdbuf());
@@ -114,8 +113,10 @@ TEST_LOGIC_START(standard_heap_zombie_announce_test)
 			success = name + ": BraiiiiiiinnnzzzZ...\n" == announcement;
 		}
 		delete [] zombies;
-	} else
+	} catch (const std::bad_alloc &e) {
+		success = false;
 		std::cerr << "Allocation of Zombie instances array failed\n";
+	}
 TEST_LOGIC_END
 
 TEST_LOGIC_START(standard_stack_zombie_destructor_test)
