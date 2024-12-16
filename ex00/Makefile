@@ -1,6 +1,6 @@
 all: test
 
-iflags=-Wall -Wextra -Werror 
+iflags=-Wall -Wextra -Werror -std=c++98
 
 src=main Zombie newZombie randomChump
 obj=$(addsuffix .o, $(src))

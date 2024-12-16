@@ -1,5 +1,6 @@
 #include <iostream>
 #include <sstream>
+#include <limits>
 
 #include "Zombie.hpp"
 
@@ -36,8 +37,9 @@ int	main() {
 TEST_LOGIC_START(zombieHorde_test)
 	const std::string	&name = Zombie::GetRandomName();
 	const int			n = 100;
+	Zombie	*invalidHorde1 = zombieHorde(-17, "DeadBorn");
 	Zombie	*horde = zombieHorde(n, name);
-	if (!(success = horde != NULL))
+	if (!(success = horde != NULL && invalidHorde1 == NULL))
 		std::cerr << "Zombie horde allocation failed\n";
 	else {
 		std::streambuf		*old = std::cout.rdbuf();
